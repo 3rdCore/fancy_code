@@ -57,7 +57,7 @@ def git_commit():
     # Stage the changes
     subprocess.run(["git", "add", "number.txt"])
     # Create commit with current date
-    if "FANCY_JOB_USE_LLM" in os.environ:
+    if True:
         commit_message = generate_random_commit_message()
     else:
         date = datetime.now().strftime("%Y-%m-%d")
@@ -76,36 +76,44 @@ def git_push():
 
 
 def update_cron_with_random_time():
-    # Generate random hour (0-23) and minute (0-59)
     random_hour = random.randint(0, 23)
     random_minute = random.randint(0, 59)
-
-    # Define the new cron job command
-    new_cron_command = f"{random_minute} {random_hour} * * * cd {script_dir} && python3 {os.path.join(script_dir, 'update_number.py')}\n"
-
-    # Get the current crontab
-    cron_file = "/tmp/current_cron"
-    os.system(
-        f"crontab -l > {cron_file} 2>/dev/null || true"
-    )  # Save current crontab, or create a new one if empty
-
-    # Update the crontab file
-    with open(cron_file, "r") as file:
-        lines = file.readlines()
-
-    with open(cron_file, "w") as file:
-        for line in lines:
-            # Remove existing entry for `update_number.py` if it exists
-            if "update_number.py" not in line:
-                file.write(line)
-        # Add the new cron job at the random time
-        file.write(new_cron_command)
-
-    # Load the updated crontab
-    os.system(f"crontab {cron_file}")
-    os.remove(cron_file)
-
-    print(f"Cron job updated to run at {random_hour}:{random_minute} tomorrow.")
+    import sys
+    if sys.platform.startswith("win"):
+        # Windows Task Scheduler
+        task_name = "UpdateNumberJob"
+        script_path = os.path.join(script_dir, "update_number.py")
+        python_path = sys.executable
+        # Format time as HH:MM
+        time_str = f"{random_hour:02d}:{random_minute:02d}"
+        # Create or update the scheduled task
+        cmd = (
+            f'schtasks /Create /F /SC DAILY /TN {task_name} '
+            f'/TR "{python_path} {script_path}" /ST {time_str}'
+        )
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"Task Scheduler job set for {time_str}.")
+        else:
+            print("Error setting Task Scheduler job:")
+            print(result.stderr)
+    else:
+        # Unix cron logic
+        import tempfile
+        new_cron_command = f"{random_minute} {random_hour} * * * cd {script_dir} && python3 {os.path.join(script_dir, 'update_number.py')}\n"
+        with tempfile.NamedTemporaryFile(delete=False, mode="w+") as tmpfile:
+            cron_file = tmpfile.name
+        os.system(f"crontab -l > {cron_file} 2>/dev/null || true")
+        with open(cron_file, "r") as file:
+            lines = file.readlines()
+        with open(cron_file, "w") as file:
+            for line in lines:
+                if "update_number.py" not in line:
+                    file.write(line)
+            file.write(new_cron_command)
+        os.system(f"crontab {cron_file}")
+        os.remove(cron_file)
+        print(f"Cron job updated to run at {random_hour}:{random_minute} tomorrow.")
 
 
 def main():

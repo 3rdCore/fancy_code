@@ -1,59 +1,53 @@
-# Daily Number Incrementer
 
-A Python script that automatically increments a number in a text file, commits the change to Git, and updates a cron job to run the script at a new random time daily. Perfect for maintaining a daily commit streak or tracking sequential values with a dynamic schedule.
+# Daily Number Incrementer 🚀🔢
 
-## Setup
+So, you’ve found my secret project. Congratulations. 🕵️‍♂️
 
-1. Clone this repository:
+This little script does exactly what you think it does: it increments a number in a file every single day, commits the change to Git, and then *magically* schedules itself to run again at some random time tomorrow.
 
-```bash
-git clone https://github.com/Shogun89/fancy_job
-cd fancy_job
-```
+Yes, that means you get a glorious **green square** every day on GitHub ✅.
+And yes, dear future employer who is definitely reading this right now 👀… this repo is basically just a glorified **commit streak machine**.
 
-2.  Run the script
+👉 Please, *please* also check my other projects if you want to see actual work that required thinking. This one’s just here to feed the algorithmic gods of GitHub. 🙏
 
-The script can be run without dependencies besides the Python standard library,
-simply by running
+---
 
-```bash
-python update_number.py
-```
+## Setup 🛠️
+This code was adapted to run on Windows using Task Scheduler. If you’re on Linux or Mac, you can use `cron` instead.
 
-You might want to run the script manually for the first time to verify it works
-before setting up a cronjob
+1. Clone this repo (don’t ask why):
 
-3. # Optional: If you prefer to ensure the script runs at a fixed time initially, you can manually set up a cron job:
-   However, if you wish to use LLM-based commit message generation, you need to
-   install [uv](https://docs.astral.sh/uv) to manage dependencies.
-   The first time you run it, it will download packages required for its execution
-   and also a large language model from Hugging Face
+   ```bash
+   git clone https://github.com/Shogun89/fancy_job
+   cd fancy_job
+   ```
 
-```bash
-# Use LLM
-FANCY_JOB_USE_LLM=true uv run python update_number.py
-```
+2. Run the script:
 
-3. Setup a cron job to run the script daily:
+   ```bash
+   python update_number.py
+   ```
 
-```bash
-crontab -e
-```
+   (Yes, it’s that dumb. No, it doesn’t need fancy dependencies… unless you want them, in which case read on.)
 
-Add the following line to the crontab file:
+3. **Optional, but absurdly over-engineered:**
+   If you want AI-generated commit messages because *why not*, install [uv](https://docs.astral.sh/uv) and do:
 
-```bash
-0 6 * * * cd /path/to/your/repo && python update_number.py
-# or with LLM
-0 6 * * * cd /path/to/your/repo && FANCY_JOB_USE_LLM=true uv run python update_number.py
-```
+   ```bash
+   set FANCY_JOB_USE_LLM=true uv run python update_number.py
+   ```
 
-This will initially run the script at 6am the next day.
+   Boom. Now your profile will look “active” while you’re still asleep. 🛌💤
 
-## Usage
+---
 
-The script will increment the number in `number.txt` and commit the change to git. You can modify the script to increment by any value or use a different file to store the number.
+## Usage 🎉
 
-By running this you will be able get a fancy streak on your github profile and get a job.
+* Increments the number in `number.txt` 📄
+* Commits to Git with or without the help of a robot 🤖
+* Repeats forever, or at least until you actually get a job 💼
 
-![How to get a job](get_a_job.jpg)
+⚠️ **Disclaimer to recruiters / employers:**
+This project is satire. If you’re impressed by this repo, we need to talk. Please look at literally anything else I’ve built.
+
+
