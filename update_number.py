@@ -23,7 +23,8 @@ def generate_random_commit_message():
 
     generator = pipeline(
         "text-generation",
-        model="openai-community/gpt2",
+        model="gpt2-medium",  #        model="gpt2-medium",  # Better than gpt2, runs on CPU
+        device="cpu",
     )
     prompt = """
         Generate a Git commit message following the Conventional Commits standard. The message should include a type, an optional scope, and a subject.Please keep it short. Here are some examples:
@@ -34,19 +35,18 @@ def generate_random_commit_message():
         - chore(deps): upgrade lodash to version 4.17.21
         - refactor(utils): simplify date formatting logic
 
-        Now, generate a new commit message:
-    """
+        Now, generate a new commit message: - """
     generated = generator(
         prompt,
         max_new_tokens=50,
         num_return_sequences=1,
-        temperature=0.9,  # Slightly higher for creativity
+        temperature=0.5,  # Slightly higher for creativity
         top_k=50,  # Limits sampling to top 50 logits
         top_p=0.9,  # Nucleus sampling for diversity
         truncation=True,
     )
     text = generated[0]["generated_text"]
-
+    print(text)
     if "- " in text:
         return text.rsplit("- ", 1)[-1].strip()
     else:
@@ -79,27 +79,80 @@ def update_cron_with_random_time():
     random_hour = random.randint(0, 23)
     random_minute = random.randint(0, 59)
     import sys
+
     if sys.platform.startswith("win"):
-        # Windows Task Scheduler
+        # Windows Task Scheduler with WakeToRun
+        import getpass
+        import tempfile
+
         task_name = "UpdateNumberJob"
         script_path = os.path.join(script_dir, "update_number.py")
         python_path = sys.executable
-        # Format time as HH:MM
         time_str = f"{random_hour:02d}:{random_minute:02d}"
-        # Create or update the scheduled task
-        cmd = (
-            f'schtasks /Create /F /SC DAILY /TN {task_name} '
-            f'/TR "{python_path} {script_path}" /ST {time_str}'
-        )
+        username = getpass.getuser()
+        xml_content = f"""<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+    <RegistrationInfo>
+        <Date>{datetime.now().isoformat()}</Date>
+        <Author>{username}</Author>
+    </RegistrationInfo>
+    <Triggers>
+        <TimeTrigger>
+            <StartBoundary>{datetime.now().date()}T{time_str}:00</StartBoundary>
+            <Enabled>true</Enabled>
+            <Repetition>
+                <Interval>P1D</Interval>
+                <StopAtDurationEnd>false</StopAtDurationEnd>
+            </Repetition>
+        </TimeTrigger>
+    </Triggers>
+    <Principals>
+        <Principal id="Author">
+            <UserId>{username}</UserId>
+            <LogonType>InteractiveToken</LogonType>
+            <RunLevel>LeastPrivilege</RunLevel>
+        </Principal>
+    </Principals>
+    <Settings>
+        <WakeToRun>true</WakeToRun>
+        <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+        <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+        <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+        <AllowHardTerminate>true</AllowHardTerminate>
+        <StartWhenAvailable>true</StartWhenAvailable>
+        <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+        <IdleSettings>
+            <StopOnIdleEnd>false</StopOnIdleEnd>
+            <RestartOnIdle>false</RestartOnIdle>
+        </IdleSettings>
+        <Enabled>true</Enabled>
+        <Hidden>false</Hidden>
+        <AllowStartOnDemand>true</AllowStartOnDemand>
+        <Priority>7</Priority>
+    </Settings>
+    <Actions Context="Author">
+        <Exec>
+            <Command>{python_path}</Command>
+            <Arguments>{script_path}</Arguments>
+        </Exec>
+    </Actions>
+</Task>
+"""
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xml", mode="w", encoding="utf-16") as tmpxml:
+            tmpxml.write(xml_content)
+            xml_path = tmpxml.name
+        cmd = f'schtasks /Create /F /TN {task_name} /XML "{xml_path}"'
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        os.remove(xml_path)
         if result.returncode == 0:
-            print(f"Task Scheduler job set for {time_str}.")
+            print(f"Task Scheduler job set for {time_str} with WakeToRun enabled.")
         else:
             print("Error setting Task Scheduler job:")
             print(result.stderr)
     else:
         # Unix cron logic
         import tempfile
+
         new_cron_command = f"{random_minute} {random_hour} * * * cd {script_dir} && python3 {os.path.join(script_dir, 'update_number.py')}\n"
         with tempfile.NamedTemporaryFile(delete=False, mode="w+") as tmpfile:
             cron_file = tmpfile.name
