@@ -54,6 +54,8 @@ def generate_random_commit_message():
 
 
 def git_commit():
+    # Ensure git user.email is set
+    subprocess.run(["git", "config", "--global", "user.email", "tom.marty@mila.quebec"])
     # Stage the changes
     subprocess.run(["git", "add", "number.txt"])
     # Create commit with current date
@@ -172,9 +174,13 @@ def update_cron_with_random_time():
 def main():
     try:
         current_number = read_number()
-        new_number = current_number + 1
-        write_number(new_number)
-        git_commit()
+        num_commits = random.randint(1, 3)
+        print(f"Sampling {num_commits} commits for this run.")
+        for i in range(num_commits):
+            new_number = current_number + 1
+            write_number(new_number)
+            git_commit()
+            current_number = new_number
         git_push()
         update_cron_with_random_time()
     except Exception as e:
