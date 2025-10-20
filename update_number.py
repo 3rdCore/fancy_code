@@ -2,7 +2,7 @@
 import os
 import random
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
@@ -77,9 +77,24 @@ def git_push():
         print(result.stderr)
 
 
-def update_cron_with_random_time():
+def get_next_weekday_time():
+    """Generate random time, but if it falls on weekend, move to next Monday"""
     random_hour = random.randint(0, 23)
     random_minute = random.randint(0, 59)
+
+    # Start with tomorrow
+    target_date = datetime.now().date() + timedelta(days=1)
+
+    # If target date is Saturday (5) or Sunday (6), move to next Monday
+    if target_date.weekday() >= 5:  # 5=Saturday, 6=Sunday
+        days_until_monday = 7 - target_date.weekday()
+        target_date = target_date + timedelta(days=days_until_monday)
+
+    return target_date, random_hour, random_minute
+
+
+def update_cron_with_random_time():
+    target_date, random_hour, random_minute = get_next_weekday_time()
     import sys
 
     if sys.platform.startswith("win"):
@@ -100,7 +115,7 @@ def update_cron_with_random_time():
     </RegistrationInfo>
     <Triggers>
         <TimeTrigger>
-            <StartBoundary>{datetime.now().date()}T{time_str}:00</StartBoundary>
+            <StartBoundary>{target_date}T{time_str}:00</StartBoundary>
             <Enabled>true</Enabled>
             <Repetition>
                 <Interval>P1D</Interval>
@@ -147,7 +162,10 @@ def update_cron_with_random_time():
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         os.remove(xml_path)
         if result.returncode == 0:
-            print(f"Task Scheduler job set for {time_str} with WakeToRun enabled.")
+            day_name = target_date.strftime("%A")
+            print(
+                f"Task Scheduler job set for {day_name} {target_date} at {time_str} with WakeToRun enabled."
+            )
         else:
             print("Error setting Task Scheduler job:")
             print(result.stderr)
@@ -155,7 +173,7 @@ def update_cron_with_random_time():
         # Unix cron logic
         import tempfile
 
-        new_cron_command = f"{random_minute} {random_hour} * * * cd {script_dir} && python3 {os.path.join(script_dir, 'update_number.py')}\n"
+        new_cron_command = f"{random_minute} {random_hour} {target_date.day} {target_date.month} * cd {script_dir} && python3 {os.path.join(script_dir, 'update_number.py')}\n"
         with tempfile.NamedTemporaryFile(delete=False, mode="w+") as tmpfile:
             cron_file = tmpfile.name
         os.system(f"crontab -l > {cron_file} 2>/dev/null || true")
@@ -168,7 +186,8 @@ def update_cron_with_random_time():
             file.write(new_cron_command)
         os.system(f"crontab {cron_file}")
         os.remove(cron_file)
-        print(f"Cron job updated to run at {random_hour}:{random_minute} tomorrow.")
+        day_name = target_date.strftime("%A")
+        print(f"Cron job updated to run on {day_name} {target_date} at {random_hour}:{random_minute:02d}.")
 
 
 def main():
