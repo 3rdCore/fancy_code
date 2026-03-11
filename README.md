@@ -1,5 +1,4 @@
 
-# Daily Number Incrementer 🚀🔢
 
 So, you’ve found my secret project. Congratulations. 🕵️‍♂️
 
